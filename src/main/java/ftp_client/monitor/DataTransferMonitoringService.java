@@ -21,7 +21,8 @@ public class DataTransferMonitoringService implements Runnable {
 		while(running.get()) {
 			ArrayList<FileTransactionStatisticInfo> statistics = new ArrayList<FileTransactionStatisticInfo>();
 			for(MonitorableFileTransaction transaction : monitors) {
-				DataTransmissionInfo info = transaction.getTransmissionInfo();
+				FileTransactionInfo transactionInfo = transaction.getTransactionInfo();
+				DataTransmissionInfo info = transactionInfo.getTransmissionInfo();
 				String startTime = (info.hasStartTime())?info.getStartTime().toString():"null";
 				String endTime = (info.hasEndTime())?info.getEndTime().toString():"null";
 				statistics.add( statisticsService.getStatistics(transaction));

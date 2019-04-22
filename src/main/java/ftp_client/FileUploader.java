@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import ftp_client.connection.ControlConnectionFactory;
 import ftp_client.connection.DataConnectionFactory;
 import ftp_client.monitor.DataTransmissionInfo;
+import ftp_client.monitor.FileTransactionInfo;
 import ftp_client.monitor.MonitorableFileTransaction;
 
 public class FileUploader implements Runnable, MonitorableFileTransaction{
@@ -69,6 +70,11 @@ public class FileUploader implements Runnable, MonitorableFileTransaction{
 	
 	public DataTransmissionInfo getTransmissionInfo() {
 		return commandSession.getTransmissionInfo();
+	}
+
+	public FileTransactionInfo getTransactionInfo() {
+		return new FileTransactionInfo(getFileName(), getFileSsize(), getTransactionStartTime(), 
+				getTransactionEndTime(), getTransmissionInfo());
 	}
 
 }

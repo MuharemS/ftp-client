@@ -8,14 +8,15 @@ public class FileTransactionStatisticsService {
 	private static final long BYTES_IN_KBYTE = 1024l;
 
 	public FileTransactionStatisticInfo getStatistics(MonitorableFileTransaction transaction) {
-		DataTransmissionInfo transmissionInfo = transaction.getTransmissionInfo();
+		FileTransactionInfo transactionInfo = transaction.getTransactionInfo();
+		DataTransmissionInfo transmissionInfo = transactionInfo.getTransmissionInfo();
 		FileTransactionStatisticInfo statistics = new FileTransactionStatisticInfo();
-		statistics.setFileName(transaction.getFileName());
-		statistics.setFileSize(transaction.getFileSsize());
+		statistics.setFileName(transactionInfo.getFileName());
+		statistics.setFileSize(transactionInfo.getFileSsize());
 		statistics.setTotalBytesSent(transmissionInfo.getBytesTransmited());
 		statistics.setAverageTransmissionSpeed(getAverageTransmissionSpeed(transmissionInfo));
 		statistics.setStatus(transmissionInfo.getStatus());
-		statistics.setTotalTransactionTime(getFileTransactionDuration(transaction));
+		statistics.setTotalTransactionTime(getFileTransactionDuration(transactionInfo));
 		return statistics;
 	}
 
@@ -30,14 +31,15 @@ public class FileTransactionStatisticsService {
 			int filesIncludedInCalculation = 0;
 
 			for(MonitorableFileTransaction transaction : transactions) {
-				DataTransmissionInfo info = transaction.getTransmissionInfo();
+				FileTransactionInfo transactionInfo = transaction.getTransactionInfo();
+				DataTransmissionInfo info = transactionInfo.getTransmissionInfo();
 				if(info.hasStartTime() && info.hasEndTime()) {
 					averageSpeed += getAverageTransmissionSpeed(info);
 					filesIncludedInCalculation++;
 				}
 
-				minStartTime = getSmaller(minStartTime, transaction.getTransactionStartTime());
-				maxEndTime = getGreater(maxEndTime, transaction.getTransactionEndTime());
+				minStartTime = getSmaller(minStartTime, transactionInfo.getTransactionStartTime());
+				maxEndTime = getGreater(maxEndTime, transactionInfo.getTransactionEndTime());
 			}
 			if(minStartTime != null && maxEndTime != null) {
 				durationInMs = (maxEndTime.getTime() - minStartTime.getTime());
@@ -67,10 +69,10 @@ public class FileTransactionStatisticsService {
 		return first;
 	}
 
-	private double getFileTransactionDuration(MonitorableFileTransaction transaction) {
+	private double getFileTransactionDuration(FileTransactionInfo transactionInfo) {
 		double duration = 0;
-		Date startTime = transaction.getTransactionStartTime();
-		Date endTime = transaction.getTransactionEndTime();
+		Date startTime = transactionInfo.getTransactionStartTime();
+		Date endTime = transactionInfo.getTransactionEndTime();
 		if(startTime != null) {
 			if(endTime == null) {
 				endTime = new Date(System.currentTimeMillis());

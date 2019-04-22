@@ -6,6 +6,7 @@ import java.util.Date;
 import org.junit.Test;
 
 import ftp_client.monitor.DataTransmissionInfo;
+import ftp_client.monitor.FileTransactionInfo;
 import ftp_client.monitor.FileTransactionStatisticInfo;
 import ftp_client.monitor.FileTransactionStatisticsService;
 import ftp_client.monitor.FileTransfersSummary;
@@ -43,6 +44,11 @@ public class FileTransactionStatisticsServiceUnitTest {
 		public Date getTransactionEndTime() {
 			return transactionEndTime;
 		}
+
+		public FileTransactionInfo getTransactionInfo() {
+			return new FileTransactionInfo(fileName, fileSize, transactionStartTime, transactionEndTime, info);
+		}
+		
 		
 	}
 	

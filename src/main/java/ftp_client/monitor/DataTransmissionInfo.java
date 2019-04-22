@@ -8,6 +8,8 @@ public class DataTransmissionInfo {
 	private long totalBytesTransmited = 0;
 	private TransferStatus status = TransferStatus.WaitingServerResponse;
 	
+	public DataTransmissionInfo() {}
+	
 	public DataTransmissionInfo(Date startTime, Date endTime, long bytesTransmited, TransferStatus status){
 		this.transmissionStartTime = startTime;
 		this.transmissionEndTime = endTime;
