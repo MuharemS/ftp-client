@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class FtpSession implements MonitorableDataTransmission{
 
 	private FtpTransferControlCommands transferControlCommands;
-	private ControlConnectionFactory controlConnectionFactory = null;
+	private ControlConnectionFactory controlConnectionFactory;
 	private DataConnectionFactory dataConnectionFactory;
 	private ControlConnection controlConnection;
 	private AtomicReference<TransferStatus> lastTransmitionStatus = new AtomicReference<TransferStatus>(TransferStatus.Waiting);
@@ -21,15 +21,24 @@ public class FtpSession implements MonitorableDataTransmission{
 	private boolean isLoggedIn = false;
 
 
-	public DataTransmissionInfo getTransmissionInfo() {
-		return new DataTransmissionInfo(lastTransmissionStartTime.get(), 
-				lastTransmissionEndTime.get(), lastTransmissionBytesTransferred.get(), 
-				lastTransmitionStatus.get());
-	}
-
 	public FtpSession(ControlConnectionFactory controlConnectionFactory, DataConnectionFactory dataConnectionFactory) {
 		this.controlConnectionFactory = controlConnectionFactory;
 		this.dataConnectionFactory = dataConnectionFactory;
+	}
+
+	public boolean connect() {
+		boolean isConnectSuccessful = false;
+		if(!isConnected()) {
+			try {
+				controlConnection = controlConnectionFactory.createConnection();
+				transferControlCommands = new FtpTransferControlCommands(controlConnection);
+				isConnected = acknowledgeConnection();
+				isConnectSuccessful = isConnected;
+			} catch (ConnectionErrorException e) {
+				isConnectSuccessful = false;
+			}
+		}
+		return isConnectSuccessful;
 	}
 
 	public void close() {
@@ -37,40 +46,28 @@ public class FtpSession implements MonitorableDataTransmission{
 			controlConnection.close();
 		}
 	}
-
-	public boolean connect() {
-		if(!isConnected()) {
-			try {
-				controlConnection = controlConnectionFactory.createConnection();
-				transferControlCommands = new FtpTransferControlCommands(controlConnection);
-			} catch (ConnectionErrorException e) {
-				return false;
-			}
-			isConnected = acknowledgeConnection();
-		}
-		return isConnected();
-	}
-
+	
 	public boolean logIn(String username, String password) {
-		if(!isConnected()) {
-			return false;
-		}
-		if(!isLoggedIn()) {
-			String response = request(FtpCommands.USERNAME+ " " + username);
-			if(checkCode(response, FtpResponseCodes.PASS_REQUIRED)) {
-				response = request(FtpCommands.PASSWORD + " " + password);
+		boolean isLoginSuccessful = false;
+		if(isConnected() && !isLoggedIn()) {
+			String usernameCommand = FtpHelperTools.createFtpCommand(FtpCommands.USERNAME, username);
+			String response = sendCommandRequest(usernameCommand);
+			if(FtpHelperTools.isResponseCode(response, FtpResponseCodes.PASS_REQUIRED)) {
+				String passwordCommand = FtpHelperTools.createFtpCommand(FtpCommands.PASSWORD , password);
+				response = sendCommandRequest(passwordCommand);
 			}
-			if(checkCode(response, FtpResponseCodes.LOGIN_SUCCESSFUL)) {
+			if(FtpHelperTools.isResponseCode(response, FtpResponseCodes.LOGIN_SUCCESSFUL)) {
 				isLoggedIn = true;
-				return true;
+				isLoginSuccessful = true;
 			}
 		}
-		return false;
+		return isLoginSuccessful;
 	}
 
 	public boolean store(String fileName, InputStream inStream) {
+		boolean isTransferSuccesfull = false;
 		clearPreviousTransmission();
-		if(!isLoggedIn()) {
+		if(!isConnected() || !isLoggedIn()) {
 			updateTransferStatus(TransferStatus.Failed);
 			return false;
 		}
@@ -80,38 +77,30 @@ public class FtpSession implements MonitorableDataTransmission{
 			return false;
 		}
 
-		boolean isTransferSuccesfull = false;
 		subscribeToDataSentUpdates(dataConnection);
 		updateTransferStatus(TransferStatus.WaitingServerResponse);
-		String response = request(FtpCommands.STORE + " " + fileName);
-		if(checkCode(response, FtpResponseCodes.READY_TO_SEND_DATA)) {
+		String storeCommand = FtpHelperTools.createFtpCommand(FtpCommands.STORE, fileName);
+		String response = sendCommandRequest(storeCommand);
+		if(FtpHelperTools.isResponseCode(response, FtpResponseCodes.READY_TO_SEND_DATA)) {
 			updateTransferStatus(TransferStatus.InProgress);
 			if(sendToDataConnection(inStream, dataConnection)) {
-				if(acknowledgeDataTransfer()){
-					updateTransferStatus(TransferStatus.Done);
-					isTransferSuccesfull = true;
-				}		
+				updateTransferStatus(TransferStatus.Done);
+				isTransferSuccesfull = true;	
 			}
 		}
 		if(!isTransferSuccesfull)
 			updateTransferStatus(TransferStatus.Failed);
-
+		
 		dataConnection.close();
 		return isTransferSuccesfull;
 	}
 
-	private boolean sendToDataConnection(InputStream data, SocketStreamDataConnection dataConnection) {
-		boolean isTransmissionSuccessful = false;
-		try {
-			setTransmissionStartTime();
-			dataConnection.send(data);
-			isTransmissionSuccessful = true;
-		} catch (IOException e) {
-		}
-		setTransmissionEndTime();
-		return isTransmissionSuccessful;
+	public DataTransmissionInfo getTransmissionInfo() {
+		return new DataTransmissionInfo(lastTransmissionStartTime.get(), 
+				lastTransmissionEndTime.get(), lastTransmissionBytesTransferred.get(), 
+				lastTransmitionStatus.get());
 	}
-
+	
 	private void clearPreviousTransmission() {
 		lastTransmissionBytesTransferred.set(0);
 		lastTransmissionStartTime.set(null);
@@ -119,9 +108,24 @@ public class FtpSession implements MonitorableDataTransmission{
 		lastTransmitionStatus.set(TransferStatus.WaitingServerResponse);
 	}
 
+	private boolean sendToDataConnection(InputStream data, SocketStreamDataConnection dataConnection) {
+		boolean isTransmissionSuccessful = false;
+		setTransmissionStartTime();
+		try {
+			dataConnection.send(data);
+			setTransmissionEndTime();
+			if(acknowledgeDataTransfer()){
+				isTransmissionSuccessful = true;
+			}	
+		} catch (IOException e) {
+			setTransmissionEndTime();
+		}
+		return isTransmissionSuccessful;
+	}
+
 	private boolean acknowledgeDataTransfer() {
 		String response = controlConnection.receive();
-		if(checkCode(response, FtpResponseCodes.DATA_TRANSFER_SUCCESSFUL)){
+		if(FtpHelperTools.isResponseCode(response, FtpResponseCodes.DATA_TRANSFER_SUCCESSFUL)){
 			return true;
 		}
 		return false;
@@ -130,16 +134,12 @@ public class FtpSession implements MonitorableDataTransmission{
 
 	private boolean acknowledgeConnection() {
 		String response = controlConnection.receive();
-		return checkCode(response, FtpResponseCodes.CONNECTION_ACKNOWLEDGEMENT);
+		return FtpHelperTools.isResponseCode(response, FtpResponseCodes.CONNECTION_ACKNOWLEDGEMENT);
 	}
 
-	private String request(String command) {
+	private String sendCommandRequest(String command) {
 		controlConnection.send(command);
 		return controlConnection.receive();
-	}
-
-	private boolean checkCode(String response, String code) {
-		return response.startsWith(code);
 	}
 
 	private boolean isConnected() {

@@ -1,9 +1,5 @@
 package ftp_client;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Arrays;
-
 public class FtpTransferControlCommands  implements TransferControlCommands{
 	private ControlConnection controlConnection;
 	
@@ -14,7 +10,7 @@ public class FtpTransferControlCommands  implements TransferControlCommands{
 	public ConnectionParameters passivePort() {
 		controlConnection.send(FtpCommands.PASSIVE);
 		String response = controlConnection.receive();
-		if(FtpHelperTools.isResponseWithCode(response, FtpResponseCodes.ENTERING_PASSIVE_MODE)){
+		if(FtpHelperTools.isResponseCode(response, FtpResponseCodes.ENTERING_PASSIVE_MODE)){
 			return calculateAddres(response);
 		}else {
 			throw new ConnectionErrorException("Could not establish passive connection.");
