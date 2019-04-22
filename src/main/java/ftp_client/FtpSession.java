@@ -62,7 +62,6 @@ public class FtpSession implements MonitorableDataTransmission{
 		if(isConnected() && !isLoggedIn()) {
 			String usernameCommand = FtpHelperTools.createFtpCommand(FtpCommands.USERNAME, username);
 			String response = sendCommandRequest(usernameCommand);
-			System.out.println("Response in login " + usernameCommand + " = " + response);
 			if(FtpHelperTools.isResponseCode(response, FtpResponseCodes.PASS_REQUIRED)) {
 				String passwordCommand = FtpHelperTools.createFtpCommand(FtpCommands.PASSWORD , password);
 				response = sendCommandRequest(passwordCommand);
@@ -145,7 +144,6 @@ public class FtpSession implements MonitorableDataTransmission{
 
 	private boolean acknowledgeConnection() {
 		String response = controlConnection.receive();
-		System.out.println("Conection ack: " + response); 
 		return FtpHelperTools.isResponseCode(response, FtpResponseCodes.CONNECTION_ACKNOWLEDGEMENT);
 	}
 

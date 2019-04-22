@@ -19,9 +19,9 @@ public class SocketStreamDataConnection {
 	}
 
 	public void send(InputStream input) throws IOException {
+		OutputStream out = connectionStream.getOutputStream();
 		int bytesRead = 0;
 		byte[] buffer = new byte[8192];
-		OutputStream out = connectionStream.getOutputStream();
 		while((bytesRead = input.read(buffer)) != -1) {
 			out.write(buffer, 0, bytesRead);
 			totalBytesSent += bytesRead;

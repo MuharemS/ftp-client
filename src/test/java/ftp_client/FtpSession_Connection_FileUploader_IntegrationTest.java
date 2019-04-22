@@ -58,11 +58,7 @@ public class FtpSession_Connection_FileUploader_IntegrationTest {
 		}
 
 		public InputStream getInputStream() throws IOException {
-			String response = new String();
-			if(!responseQueue.isEmpty()) {
-				response = responseQueue.remove();
-			}
-			return new ByteArrayInputStream(response.getBytes());
+			return inStream;
 		}
 
 		public OutputStream getOutputStream() throws IOException {
@@ -97,8 +93,12 @@ public class FtpSession_Connection_FileUploader_IntegrationTest {
 			initializeOutStream();
 		}
 
-		public void prepareStream(String content) {
-			inStream = new ByteArrayInputStream(content.getBytes());
+		public void prepareStream() {
+			String responses = new String();
+			while(responseQueue.size() > 0) {
+				responses += responseQueue.remove();
+			}
+			inStream = new ByteArrayInputStream(responses.getBytes());
 		}
 
 		public boolean isConnected() {
@@ -157,16 +157,18 @@ public class FtpSession_Connection_FileUploader_IntegrationTest {
 		controlStream.addResponseToQueue(FtpResponseCodes.CONNECTION_ACKNOWLEDGEMENT + " Connection accepted\r\n");
 	}
 
-	public void simulateLogin() {
+	public void prepareLoginResponses() {
 		controlStream.addResponseToQueue(FtpResponseCodes.CONNECTION_ACKNOWLEDGEMENT + " Connection accepted\r\n");
 		String response1 = FtpResponseCodes.PASS_REQUIRED + " Enter password\r\n";
 		String response2 = FtpResponseCodes.LOGIN_SUCCESSFUL + " Login successful\r\n";
 		controlStream.addResponseToQueue(response1);
 		controlStream.addResponseToQueue(response2);
+	}
+	
+	public void simulateLogin() {
 		session.connect();
 		session.logIn("fake", "fake");
 		controlStream.clearSentData();
-
 	}
 
 	@BeforeClass
@@ -201,12 +203,14 @@ public class FtpSession_Connection_FileUploader_IntegrationTest {
 	@Test
 	public void connectionSuccessfulTest() {
 		controlStream.addResponseToQueue(FtpResponseCodes.CONNECTION_ACKNOWLEDGEMENT + " Connection accepted\r\n");
+		controlStream.prepareStream();
 		boolean isConnected = session.connect();
 		assertTrue(isConnected);
 	}
 	@Test
 	public void connectioUnsuccessfulTest_badResponseFromServer() {
 		controlStream.addResponseToQueue("123 WrongCode\r\n");
+		controlStream.prepareStream();
 		boolean isConnected = session.connect();
 		assertFalse(isConnected);
 	}
@@ -219,9 +223,10 @@ public class FtpSession_Connection_FileUploader_IntegrationTest {
 
 	@Test
 	public void expectsSuccessfullLoginIfPasswordIsNotRequired() {
-		prepareConnectionAck();
-		session.connect();
+		controlStream.addResponseToQueue(FtpResponseCodes.CONNECTION_ACKNOWLEDGEMENT + " Connection accepted\r\n");
 		controlStream.addResponseToQueue(FtpResponseCodes.LOGIN_SUCCESSFUL + " Login successful");
+		controlStream.prepareStream();
+		session.connect();
 		boolean isLoggedIn = session.logIn("username", "password");
 		String requestSent = controlStream.getSentData();
 		String expectedRequest = new String(FtpCommands.USERNAME + " username\r\n");
@@ -232,12 +237,12 @@ public class FtpSession_Connection_FileUploader_IntegrationTest {
 	@Test
 	public void expectsSuccessfullLoginIfPasswordIsRequired() {
 		prepareConnectionAck();
-		session.connect();
 		String response1 = FtpResponseCodes.PASS_REQUIRED + " Enter password\r\n";
 		String response2 = FtpResponseCodes.LOGIN_SUCCESSFUL + " Login successful\r\n";
 		controlStream.addResponseToQueue(response1);
 		controlStream.addResponseToQueue(response2);
-
+		controlStream.prepareStream();
+		session.connect();
 		boolean isLoggedIn = session.logIn("username", "password");
 
 		String requestSent = controlStream.getSentData();
@@ -249,10 +254,13 @@ public class FtpSession_Connection_FileUploader_IntegrationTest {
 
 	@Test
 	public void expectsToSuccesfullyStoreData() {
-		simulateLogin();
+		prepareLoginResponses();
 		controlStream.addResponseToQueue(FtpResponseCodes.ENTERING_PASSIVE_MODE + " entering passive connection (192,168,10,14,134,55)\r\n");
 		controlStream.addResponseToQueue(FtpResponseCodes.READY_TO_SEND_DATA + " \r\n");
 		controlStream.addResponseToQueue(FtpResponseCodes.DATA_TRANSFER_SUCCESSFUL + " \r\n");
+		controlStream.prepareStream();
+		simulateLogin();
+		
 		String fakeFileContent = "Fake text. FileContent: !!! ";
 		ByteArrayInputStream fakeFileStream = new ByteArrayInputStream(fakeFileContent.getBytes());
 
@@ -268,10 +276,19 @@ public class FtpSession_Connection_FileUploader_IntegrationTest {
 	
 	@Test
 	public void expectsToSuccesfullyStoreDataMultipleTimes() {
-		simulateLogin();
+		prepareLoginResponses();
 		controlStream.addResponseToQueue(FtpResponseCodes.ENTERING_PASSIVE_MODE + " entering passive connection (192,168,10,14,134,55)\r\n");
 		controlStream.addResponseToQueue(FtpResponseCodes.READY_TO_SEND_DATA + " \r\n");
 		controlStream.addResponseToQueue(FtpResponseCodes.DATA_TRANSFER_SUCCESSFUL + " \r\n");
+		
+		// Responses for second transaction
+		controlStream.addResponseToQueue(FtpResponseCodes.ENTERING_PASSIVE_MODE + " entering passive connection (192,168,10,14,134,55)\r\n");
+		controlStream.addResponseToQueue(FtpResponseCodes.READY_TO_SEND_DATA + " \r\n");
+		controlStream.addResponseToQueue(FtpResponseCodes.DATA_TRANSFER_SUCCESSFUL + " \r\n");
+		
+		controlStream.prepareStream();
+		simulateLogin();
+		
 		String fakeFileContent = "Fake text. FileContent: !!! ";
 		ByteArrayInputStream fakeFileStream = new ByteArrayInputStream(fakeFileContent.getBytes());
 
@@ -288,9 +305,7 @@ public class FtpSession_Connection_FileUploader_IntegrationTest {
 		fakeFileContent = "Another file! Another content! Same functionality";
 		fakeFileStream = new ByteArrayInputStream(fakeFileContent.getBytes());
 		
-		controlStream.addResponseToQueue(FtpResponseCodes.ENTERING_PASSIVE_MODE + " entering passive connection (192,168,10,14,134,55)\r\n");
-		controlStream.addResponseToQueue(FtpResponseCodes.READY_TO_SEND_DATA + " \r\n");
-		controlStream.addResponseToQueue(FtpResponseCodes.DATA_TRANSFER_SUCCESSFUL + " \r\n");
+		
 		
 		isFileSuccefullyStored = session.store("FakeFile.txt", fakeFileStream);
 		assertTrue(isFileSuccefullyStored);
@@ -304,10 +319,14 @@ public class FtpSession_Connection_FileUploader_IntegrationTest {
 	
 	@Test
 	public void expectsFailStoringDataIfConnectionInfoIsWrong() {
-		simulateLogin();
+		prepareLoginResponses();
 		controlStream.addResponseToQueue(FtpResponseCodes.ENTERING_PASSIVE_MODE + " entering passive connection (192,168,10,14134,55)\r\n");
 		controlStream.addResponseToQueue(FtpResponseCodes.READY_TO_SEND_DATA + " \r\n");
 		controlStream.addResponseToQueue(FtpResponseCodes.DATA_TRANSFER_SUCCESSFUL + " \r\n");
+		
+		controlStream.prepareStream();
+		simulateLogin();
+		
 		String fakeFileContent = "Fake text. FileContent: !!! ";
 		ByteArrayInputStream fakeFileStream = new ByteArrayInputStream(fakeFileContent.getBytes());
 
@@ -328,7 +347,9 @@ public class FtpSession_Connection_FileUploader_IntegrationTest {
 		controlStream.addResponseToQueue(FtpResponseCodes.ENTERING_PASSIVE_MODE + " entering passive connection (192,168,10,14,134,55)\r\n");
 		controlStream.addResponseToQueue(FtpResponseCodes.READY_TO_SEND_DATA + " \r\n");
 		controlStream.addResponseToQueue(FtpResponseCodes.DATA_TRANSFER_SUCCESSFUL + " \r\n");
-
+		
+		controlStream.prepareStream();
+		
 		FileUploader uploader = new FileUploader(testFile, new UserCredidentials("fake", "fake"), controllFactory, dataFactory);
 		uploader.run();
 
@@ -349,6 +370,8 @@ public class FtpSession_Connection_FileUploader_IntegrationTest {
 		controlStream.addResponseToQueue(FtpResponseCodes.READY_TO_SEND_DATA + " \r\n");
 		controlStream.addResponseToQueue(FtpResponseCodes.DATA_TRANSFER_SUCCESSFUL + " \r\n");
 		
+		controlStream.prepareStream();
+
 		FileUploader uploader = new FileUploader(testFile, new UserCredidentials("fake", "fake"), controllFactory, dataFactory);
 		controllFactory.disableConnection();
 		uploader.run();
@@ -365,7 +388,8 @@ public class FtpSession_Connection_FileUploader_IntegrationTest {
 		controlStream.addResponseToQueue("989" + " Unknown response code\r\n");
 		controlStream.addResponseToQueue(FtpResponseCodes.LOGIN_SUCCESSFUL + " Login successful\r\n");
 		;
-		
+		controlStream.prepareStream();
+
 		FileUploader uploader = new FileUploader(testFile, new UserCredidentials("fake", "fake"), controllFactory, dataFactory);
 		uploader.run();
 
@@ -380,7 +404,8 @@ public class FtpSession_Connection_FileUploader_IntegrationTest {
 
 		controlStream.addResponseToQueue(FtpResponseCodes.CONNECTION_ACKNOWLEDGEMENT + " Connection accepted\r\n");
 		controlStream.addResponseToQueue("989" + " Unknown response code\r\n");
-		
+		controlStream.prepareStream();
+
 		FileUploader uploader = new FileUploader(testFile, new UserCredidentials("fake", "fake"), controllFactory, dataFactory);
 		uploader.run();
 
