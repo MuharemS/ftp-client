@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class FtpSession implements MonitorableDataTransmission{
 
-	private FtpTransfercommandsImpl transactionParametersCommands = new FtpTransfercommandsImpl();
+	private FtpTransferControlCommands transferControlCommands;
 	private ControlConnectionFactory controlConnectionFactory = null;
 	private DataConnectionFactory dataConnectionFactory;
 	private ControlConnection controlConnection;
@@ -42,6 +42,7 @@ public class FtpSession implements MonitorableDataTransmission{
 		if(!isConnected()) {
 			try {
 				controlConnection = controlConnectionFactory.createConnection();
+				transferControlCommands = new FtpTransferControlCommands(controlConnection);
 			} catch (ConnectionErrorException e) {
 				return false;
 			}
@@ -152,7 +153,7 @@ public class FtpSession implements MonitorableDataTransmission{
 	private SocketStreamDataConnection createDataConnection() {
 		SocketStreamDataConnection newConnection = null;
 		try {
-			newConnection = dataConnectionFactory.createConnection(transactionParametersCommands);
+			newConnection = dataConnectionFactory.createConnection(transferControlCommands);
 
 		} catch (ConnectionErrorException e) {
 
@@ -183,51 +184,8 @@ public class FtpSession implements MonitorableDataTransmission{
 	private void updateTransferStatus(TransferStatus newStatus) {
 		lastTransmitionStatus.set(newStatus);
 	}
-
+	
 	private void updateBytesTransfered(long newValue) {
 		lastTransmissionBytesTransferred.set(newValue);
 	}
-
-	private class FtpTransfercommandsImpl implements TransferControlCommands{
-
-		public ConnectionParameters passivePort() {
-			String response = request(FtpCommands.PASSIVE);
-			if(checkCode(response, FtpResponseCodes.ENTERING_PASSIVE_MODE)){
-				return calculateAddres(response);
-			}else {
-				throw new ConnectionErrorException("Could not establish passive connection.");
-			}
-		}
-
-		public boolean activePort(ConnectionParameters parameters) {
-			// TODO Auto-generated method stub
-			return true;
-		}
-
-		public boolean transferMode(FtpTransferMode mode) {
-			// TODO Auto-generated method stub
-			return true;
-		}
-
-		private ConnectionParameters calculateAddres(String response) {
-			response = response.substring(3);
-			response = extractAddressInformation(response);
-			String[] stringValues = response.split(",");
-			if(stringValues.length < 6) {
-				throw new ConnectionErrorException("Received invalid response from server!");
-			}
-			String host = stringValues[0] + "."+ stringValues[1]+ "." + stringValues[2]+ "." + stringValues[3];
-
-			Integer portMultiplier = Integer.parseInt(stringValues[4]);
-			Integer portAdd = Integer.parseInt(stringValues[5]);
-			Integer port = portMultiplier * 256 + portAdd;
-			return new ConnectionParameters(host, port);
-		}
-
-		private String extractAddressInformation(String response) {
-			return response.replaceAll("[^0-9,]", "");
-		}
-
-	};
-
 }
