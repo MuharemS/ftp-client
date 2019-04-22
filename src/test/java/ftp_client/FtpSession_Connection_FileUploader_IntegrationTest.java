@@ -113,7 +113,7 @@ public class FtpSession_Connection_FileUploader_IntegrationTest {
 				throw new ConnectionErrorException("Could not create connection.");
 			}
 			try {
-				return new SocketControlConnection(this.stream);
+				return new FtpStreamControlConenction(this.stream);
 			} catch (IOException e) {
 				throw new ConnectionErrorException();
 			}

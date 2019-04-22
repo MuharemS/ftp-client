@@ -18,7 +18,7 @@ public class SocketControlConnectionFactory implements ControlConnectionFactory{
 			Socket socket;
 			socket = new Socket(host, port);
 			SocketConnectionStream connectionStream = new SocketConnectionStream(socket);
-			connection = new SocketControlConnection(connectionStream);
+			connection = new FtpStreamControlConenction(connectionStream);
 		} catch (UnknownHostException e) {
 			throw new ConnectionErrorException(e.getMessage());
 		} catch (IOException e) {
