@@ -1,4 +1,4 @@
-package ftp_client;
+package ftp_client.monitor;
 
 public class FileTransactionStatisticInfo {
 	private double totalTransactionTime = 0l;

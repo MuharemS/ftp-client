@@ -1,4 +1,4 @@
-package ftp_client;
+package ftp_client.monitor;
 
 public class FileTransfersSummary {
 	private double totalTime = 0;

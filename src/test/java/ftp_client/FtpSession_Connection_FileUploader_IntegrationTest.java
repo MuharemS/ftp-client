@@ -19,6 +19,16 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import ftp_client.connection.ConnectionErrorException;
+import ftp_client.connection.ConnectionParameters;
+import ftp_client.connection.ConnectionStream;
+import ftp_client.connection.ControlConnection;
+import ftp_client.connection.ControlConnectionFactory;
+import ftp_client.connection.DataConnectionFactory;
+import ftp_client.connection.FtpStreamControlConenction;
+import ftp_client.connection.SocketStreamDataConnection;
+import ftp_client.monitor.TransferStatus;
+
 public class FtpSession_Connection_FileUploader_IntegrationTest {
 
 	private FakeConenctionStream controlStream;

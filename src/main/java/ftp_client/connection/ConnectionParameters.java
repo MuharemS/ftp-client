@@ -1,4 +1,4 @@
-package ftp_client;
+package ftp_client.connection;
 
 public class ConnectionParameters {
 	public String hostname;

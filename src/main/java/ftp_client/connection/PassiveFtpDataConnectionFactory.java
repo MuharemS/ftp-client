@@ -1,8 +1,10 @@
-package ftp_client;
+package ftp_client.connection;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+
+import ftp_client.TransferControlCommands;
 
 public class PassiveFtpDataConnectionFactory implements DataConnectionFactory {
 

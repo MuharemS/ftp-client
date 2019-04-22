@@ -1,4 +1,6 @@
-package ftp_client;
+package ftp_client.connection;
+
+import ftp_client.CommandStreamException;
 
 public interface ControlConnection {
 	

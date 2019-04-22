@@ -1,4 +1,4 @@
-package ftp_client;
+package ftp_client.monitor;
 
 public interface DataStreamMonitor {
 	public void totalBytesSent(long bytes);

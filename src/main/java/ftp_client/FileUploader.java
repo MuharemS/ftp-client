@@ -6,6 +6,11 @@ import java.io.FileNotFoundException;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicReference;
 
+import ftp_client.connection.ControlConnectionFactory;
+import ftp_client.connection.DataConnectionFactory;
+import ftp_client.monitor.DataTransmissionInfo;
+import ftp_client.monitor.MonitorableFileTransaction;
+
 public class FileUploader implements Runnable, MonitorableFileTransaction{
 	private File fileForUpload;
 	private UserCredidentials credidentials;

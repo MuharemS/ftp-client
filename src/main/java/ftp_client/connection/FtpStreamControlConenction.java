@@ -1,4 +1,4 @@
-package ftp_client;
+package ftp_client.connection;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -9,7 +9,7 @@ public class FtpStreamControlConenction implements ControlConnection {
 	private ConnectionStream stream;
 	private final static String LINE_BREAK = new String("\r\n");
 	
-	FtpStreamControlConenction(ConnectionStream stream) throws IOException{
+	public FtpStreamControlConenction(ConnectionStream stream) throws IOException{
 		this.stream = stream;
 	}
 
@@ -53,6 +53,7 @@ public class FtpStreamControlConenction implements ControlConnection {
 		String singleLine = new String();
 		while(singleLine != null && !isEndOfResponse(singleLine)) {
 			singleLine = reader.readLine();
+			System.out.println("Line" + singleLine);
 			if(singleLine != null)
 				response += singleLine;
 		}

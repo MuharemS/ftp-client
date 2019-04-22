@@ -5,12 +5,12 @@ import java.util.Date;
 
 import org.junit.Test;
 
-import ftp_client.DataTransmissionInfo;
-import ftp_client.FileTransactionStatisticInfo;
-import ftp_client.FileTransactionStatisticsService;
-import ftp_client.FileTransfersSummary;
-import ftp_client.MonitorableFileTransaction;
-import ftp_client.TransferStatus;
+import ftp_client.monitor.DataTransmissionInfo;
+import ftp_client.monitor.FileTransactionStatisticInfo;
+import ftp_client.monitor.FileTransactionStatisticsService;
+import ftp_client.monitor.FileTransfersSummary;
+import ftp_client.monitor.MonitorableFileTransaction;
+import ftp_client.monitor.TransferStatus;
 
 public class FileTransactionStatisticsServiceUnitTest {
 	FileTransactionStatisticsService statistics = new FileTransactionStatisticsService();

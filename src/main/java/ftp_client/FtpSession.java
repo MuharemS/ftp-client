@@ -6,6 +6,16 @@ import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import ftp_client.connection.ConnectionErrorException;
+import ftp_client.connection.ControlConnection;
+import ftp_client.connection.ControlConnectionFactory;
+import ftp_client.connection.DataConnectionFactory;
+import ftp_client.connection.SocketStreamDataConnection;
+import ftp_client.monitor.DataStreamMonitor;
+import ftp_client.monitor.DataTransmissionInfo;
+import ftp_client.monitor.MonitorableDataTransmission;
+import ftp_client.monitor.TransferStatus;
+
 
 public class FtpSession implements MonitorableDataTransmission{
 
@@ -31,9 +41,9 @@ public class FtpSession implements MonitorableDataTransmission{
 		if(!isConnected()) {
 			try {
 				controlConnection = controlConnectionFactory.createConnection();
-				transferControlCommands = new FtpTransferControlCommands(controlConnection);
 				isConnected = acknowledgeConnection();
 				isConnectSuccessful = isConnected;
+				transferControlCommands = new FtpTransferControlCommands(controlConnection);
 			} catch (ConnectionErrorException e) {
 				isConnectSuccessful = false;
 			}
@@ -52,6 +62,7 @@ public class FtpSession implements MonitorableDataTransmission{
 		if(isConnected() && !isLoggedIn()) {
 			String usernameCommand = FtpHelperTools.createFtpCommand(FtpCommands.USERNAME, username);
 			String response = sendCommandRequest(usernameCommand);
+			System.out.println("Response in login " + usernameCommand + " = " + response);
 			if(FtpHelperTools.isResponseCode(response, FtpResponseCodes.PASS_REQUIRED)) {
 				String passwordCommand = FtpHelperTools.createFtpCommand(FtpCommands.PASSWORD , password);
 				response = sendCommandRequest(passwordCommand);
@@ -134,6 +145,7 @@ public class FtpSession implements MonitorableDataTransmission{
 
 	private boolean acknowledgeConnection() {
 		String response = controlConnection.receive();
+		System.out.println("Conection ack: " + response); 
 		return FtpHelperTools.isResponseCode(response, FtpResponseCodes.CONNECTION_ACKNOWLEDGEMENT);
 	}
 

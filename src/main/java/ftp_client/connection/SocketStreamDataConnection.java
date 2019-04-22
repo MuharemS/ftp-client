@@ -1,8 +1,11 @@
-package ftp_client;
+package ftp_client.connection;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+
+import ftp_client.CommandStreamException;
+import ftp_client.monitor.DataStreamMonitor;
 
 public class SocketStreamDataConnection {
 	private ConnectionStream connectionStream;

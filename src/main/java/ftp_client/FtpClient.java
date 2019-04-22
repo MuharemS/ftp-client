@@ -12,6 +12,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import ftp_client.UserCredidentials;
+import ftp_client.connection.ConnectionParameters;
+import ftp_client.connection.ControlConnectionFactory;
+import ftp_client.connection.DataConnectionFactory;
+import ftp_client.connection.PassiveFtpDataConnectionFactory;
+import ftp_client.connection.SocketControlConnectionFactory;
+import ftp_client.monitor.ConsoleTransactionStatisticsPrinter;
+import ftp_client.monitor.DataTransferMonitoringService;
+import ftp_client.monitor.DefaultTransactionStatisticsFormater;
+import ftp_client.monitor.FileTransactionStatisticsService;
 
 public class FtpClient {
 	private static String username = "user";

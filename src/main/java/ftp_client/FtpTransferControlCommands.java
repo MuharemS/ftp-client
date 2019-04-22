@@ -1,5 +1,9 @@
 package ftp_client;
 
+import ftp_client.connection.ConnectionErrorException;
+import ftp_client.connection.ConnectionParameters;
+import ftp_client.connection.ControlConnection;
+
 public class FtpTransferControlCommands  implements TransferControlCommands{
 	private ControlConnection controlConnection;
 	
